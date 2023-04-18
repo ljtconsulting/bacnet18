@@ -1,17 +1,19 @@
-
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetObjectIdentifier" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.object.CommonPropertyDefinitions" %>
 
 <%@ page import="com.controlj.green.addonsupport.bacnet.*" %>
 <%@ page import="java.io.StringWriter" %>
 <%@ page import="java.io.PrintWriter" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetPropertyIdentifier" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.BACnetPropertyIdentifiers" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.PropertyIdentifier" %>
 <%@ page import="org.jetbrains.annotations.NotNull" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.BACnetPropertyTypes" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetString" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.PropertyDefinition" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
+<%@ page import="com.controlj.experiment.bacnet.definitions.DeviceObjectDefinition" %>
+<%@ page import="com.controlj.green.addonsupport.bacnet.data.*" %>
+<%@ page import="java.util.stream.Collectors" %>
+<%@ page import="java.util.function.Function" %>
 <%--
   ~ Copyright (c) 2010 Automated Logic Corporation
   ~
@@ -47,6 +49,9 @@
     String propertyListAll = "error";
 	String propertyList1 = "error";
     int propertyListSize_rpm = -1;
+    int activeCovSubscriptionSize = 0;
+    List< BACnetObjectPropertyReference > activeCovSubscriptions = new ArrayList<>();
+    //List<String> subscriptionsString = new ArrayList<>();
 
     try
     {
@@ -86,6 +91,28 @@
             propertyList1 = resultProperty.getIdentifier().getName();
 
         propertyListSize_rpm = resultAll.getValue(objId, CommonPropertyDefinitions.propertyList).size();
+
+        ReadResult< BACnetList<BACnetCOVSubscription> > result = device.readProperty(objId, DeviceObjectDefinition.activeCovSubscriptions);
+        BACnetList<BACnetCOVSubscription> bacnetList = result.get();
+        for ( BACnetCOVSubscription covSubscription : bacnetList )
+        {
+           BACnetObjectPropertyReference opRef = covSubscription.getPropertyReference();
+           activeCovSubscriptions.add(opRef);
+/*
+           subscriptionsString = activeCovSubscriptions.stream()
+           //         .map( opr -> opr.getObjectIdentifier().getObjectIdAsString() + " => "+opr.getPropertyIdentifier().getIdentifierNumber() )
+                   .map( new Function< BACnetObjectPropertyReference, String >()
+                   {
+                       @Override
+                       public String apply( BACnetObjectPropertyReference opr )
+                       {
+                           return opr.getObjectIdentifier().getObjectIdAsString() + " => "+opr.getPropertyIdentifier().getIdentifierNumber();
+                       }
+                   } )
+                    .collect( Collectors.toList());
+*/
+        }
+
     }
     catch (Exception e)
     {
@@ -96,6 +123,7 @@
     }
 
 %>
+
 <table>
     <tr>
         <td>Error Message:</td>
@@ -120,5 +148,13 @@
     <tr>
         <td>Property List Size:</td>
         <td><%= propertyListSize_rpm %></td>
+    </tr>
+    <tr>
+        <td>Active COV Subscriptions Size:</td>
+        <td><%= activeCovSubscriptionSize %></td>
+    </tr>
+    <tr>
+        <td>Active COV Subscriptions:</td>
+        <td><%= activeCovSubscriptions %></td>
     </tr>
 </table>
