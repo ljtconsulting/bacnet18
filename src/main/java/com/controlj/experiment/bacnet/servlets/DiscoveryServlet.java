@@ -23,17 +23,13 @@
 package com.controlj.experiment.bacnet.servlets;
 
 import com.controlj.green.addonsupport.access.LocationType;
-import com.controlj.green.addonsupport.bacnet.BACnet;
-import com.controlj.green.addonsupport.bacnet.BACnetAccess;
-import com.controlj.green.addonsupport.bacnet.BACnetConnection;
-import com.controlj.green.addonsupport.bacnet.BACnetDevice;
-import com.controlj.green.addonsupport.bacnet.data.BACnetObjectIdentifier;
-import com.controlj.green.addonsupport.bacnet.data.BACnetString;
+import com.controlj.green.addonsupport.bacnet.*;
+import com.controlj.green.addonsupport.bacnet.data.*;
 import com.controlj.green.addonsupport.bacnet.discovery.DeviceDiscoverer;
 import com.controlj.green.addonsupport.bacnet.discovery.NetworkDiscoverer;
 import com.controlj.green.addonsupport.bacnet.object.BACnetObjectTypes;
 import com.controlj.green.addonsupport.bacnet.object.ObjectType;
-import com.controlj.green.addonsupport.bacnet.object.ScheduleDefinition;
+import com.controlj.green.addonsupport.bacnet.object.SchedulePropertyDefinitions;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -43,6 +39,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +52,63 @@ public class DiscoveryServlet extends HttpServlet {
     static {
         supportedObjectTypes.put(BACnetObjectTypes.schedule, "schedule.jsp");
         supportedObjectTypes.put(BACnetObjectTypes.analogInput, "analoginput.jsp");
+        supportedObjectTypes.put(BACnetObjectTypes.analogValue, "analogvalue.jsp");
+        supportedObjectTypes.put(BACnetObjectTypes.binaryInput, "binaryinput.jsp");
+        supportedObjectTypes.put(BACnetObjectTypes.device, "deviceprops.jsp");
+    }
+
+    @Override
+    protected void doPost( HttpServletRequest req, HttpServletResponse resp ) throws ServletException, IOException
+    {
+        resp.setContentType("application/json");
+        final PrintWriter writer = resp.getWriter();
+        final JSONArray arrayData = new JSONArray();
+
+        int devInstanceNum = Integer.parseInt(req.getParameter("devid"));
+        int objIdNum = Integer.parseInt(req.getParameter("objid"));
+
+        BACnetObjectIdentifier objId = null;
+
+        try
+        {
+            BACnetConnection conn = BACnet.getBACnet().getDefaultConnection();
+            BACnetAccess bacnet = conn.getAccess();
+
+            BACnetDevice device = bacnet.lookupDevice(devInstanceNum).get();
+            objId = new BACnetObjectIdentifier(objIdNum);
+
+            MACAddress address = MACAddressFactory.createIPv4Address( (byte)1,(byte)2,(byte)4,(byte)5 );
+
+            String result = writeInternalSchedules( device, objId );
+            System.out.println(result);
+       }
+        catch (Exception e) {
+            // since this servlet is being accessed via XHR and a user won't see it, this seems the best
+            // way to communicate (and log) errors.
+            e.printStackTrace();
+        }
+    }
+
+    private String writeInternalSchedules(BACnetDevice device, BACnetObjectIdentifier objId)
+    {
+        String errorMessage = "";
+        BACnetTimeValue timeValue = new BACnetTimeValue( new BACnetTime(), new BACnetEnumerated( 1 ));
+        ArrayList<BACnetTimeValue> timeValues = new ArrayList<>();
+        timeValues.add( timeValue );
+
+        BACnetDailySchedule value = new BACnetDailySchedule( timeValues );
+        WriteResult<BACnetDailySchedule> writeResult = device.writeProperty(objId, SchedulePropertyDefinitions.weeklySchedule.element(1), value);
+        try
+        {
+            writeResult.check();
+        }
+        catch ( InterruptedException | BACnetException e )
+        {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter( sw ) );
+            errorMessage = sw.toString();
+        }
+        return errorMessage;
     }
 
     /*
@@ -89,7 +144,7 @@ public class DiscoveryServlet extends HttpServlet {
                 if (type!= null && type.equals("networks") ) {   // handle network discovery
 
                     NetworkDiscoverer networkDiscoverer = bacnet.createNetworkDiscoverer();
-                    List<Integer> addresses = networkDiscoverer.search(5, TimeUnit.SECONDS);
+                    List<Integer> addresses = networkDiscoverer.search(3, TimeUnit.SECONDS);
                     addresses.add(0);
 
                     Collections.sort(addresses);
@@ -107,7 +162,7 @@ public class DiscoveryServlet extends HttpServlet {
                     DeviceDiscoverer deviceDiscoverer = bacnet.createDeviceDiscoverer();
                     int netNum = Integer.parseInt(id);
 
-                    List<BACnetDevice> devices = deviceDiscoverer.search(netNum, 5, TimeUnit.SECONDS);
+                    List<BACnetDevice> devices = deviceDiscoverer.search(netNum, 3, TimeUnit.SECONDS);
 
                     for (BACnetDevice device : devices) {
                         JSONObject next = new JSONObject();
@@ -128,7 +183,7 @@ public class DiscoveryServlet extends HttpServlet {
                         try {
                             if (supportedObjectTypes.containsKey(objectID.getType())) {
 
-                                BACnetString name = device.readProperty(objectID, ScheduleDefinition.objectName).get();
+                                BACnetString name = device.readProperty(objectID, SchedulePropertyDefinitions.objectName).get();
 
                                 JSONObject next = new JSONObject();
                                 next.put("title", name.getValue() + " - " + Integer.toString(objectID.getInstance()));

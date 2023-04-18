@@ -1,8 +1,11 @@
 <%@ page import="com.controlj.green.addonsupport.bacnet.data.*" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.data.datetime.*" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.object.ScheduleDefinition" %>
+<%@ page import="com.controlj.green.addonsupport.bacnet.object.SchedulePropertyDefinitions" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.*" %>
+<%@ page import="java.io.PrintWriter" %>
+<%@ page import="java.io.StringWriter" %>
+<%@ page import="java.util.ArrayList" %>
 <%--
   ~ Copyright (c) 2010 Automated Logic Corporation
   ~
@@ -33,6 +36,7 @@
     private static final String[] months = {"January", "February", "March", "April", "May", "June", "July",
             "August", "September", "October", "November", "December"};
 
+    public String errorMessage = "";
 
     public String formatTime(BACnetTime time) {
         if (time.isSimpleTime()) {
@@ -225,6 +229,46 @@
 
         return result.toString();
     }
+
+    private String writeInternalSchedules(BACnetDevice device, BACnetObjectIdentifier objId)
+    {
+        String errorMessage = "";
+        BACnetTimeValue timeValue = new BACnetTimeValue( new BACnetTime(), new BACnetEnumerated( 1 ));
+        ArrayList<BACnetTimeValue> timeValues = new ArrayList<>();
+        timeValues.add( timeValue );
+
+        BACnetDailySchedule value = new BACnetDailySchedule( timeValues );
+        PropertiesSpecFactory factory = new PropertiesSpecFactory();
+        factory.forObject(objId).propertyAndValue( SchedulePropertyDefinitions.weeklySchedule.element(3), value )
+                .forObject(objId).propertyAndValue( SchedulePropertyDefinitions.weeklySchedule.element(4), value );
+        WriteResult<WritePropertiesResult> wpmresult = device.writeProperties( factory.create(), factory.createValues() );
+        try
+        {
+            wpmresult.check();
+        }
+        catch ( InterruptedException | BACnetException e )
+        {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter( sw ) );
+            errorMessage = sw.toString();
+        }
+
+/*
+        WriteResult<BACnetDailySchedule> writeResult = device.writeProperty(objId, SchedulePropertyDefinitions.weeklySchedule.element(2), value);
+        try
+        {
+            writeResult.check();
+        }
+        catch ( InterruptedException | BACnetException e )
+        {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter( sw ) );
+            errorMessage = sw.toString();
+        }
+*/
+        return errorMessage;
+    }
+
 %>
 <%
     int objIdNum = Integer.parseInt(request.getParameter("id"));
@@ -235,20 +279,39 @@
 
     BACnetDevice device = bacnet.lookupDevice(devInstanceNum).get();
     BACnetObjectIdentifier objId = new BACnetObjectIdentifier(objIdNum);
-    ReadPropertiesResult result = device.readProperties(objId, ScheduleDefinition.objectName,
-            ScheduleDefinition.weeklySchedule, ScheduleDefinition.exceptionSchedule).get();
+
+
+    //errorMessage = writeInternalSchedules( device, objId );
+
+
+
+    ReadPropertiesResult result = device.readProperties(objId, SchedulePropertyDefinitions.objectName,
+            SchedulePropertyDefinitions.weeklySchedule, SchedulePropertyDefinitions.exceptionSchedule).get();
 %>
+<form id="writeSchedForm">
+    <input id="devid" type="hidden"><%= device.getDeviceIdentifier().getInstance() %>
+    <input id="objid" type="hidden"><%= objId %>
+    <button id="writeSched" type="submit">Write Schedules</button>
+</form>
+
+<script>
+    var form = document.getElementById("writeSchedForm");
+    document.getElementById("writeSched").addEventListener("click", function(){
+     } );
+</script>
+
 <table>
+    <tr><td><%= errorMessage %></td></tr>
     <tr>
         <td>Name:</td>
-        <td><%= result.getValue(objId, ScheduleDefinition.objectName).getValue() %></td>
+        <td><%= result.getValue(objId, SchedulePropertyDefinitions.objectName).getValue() %></td>
     </tr>
     <tr>
         <td>Weekly Schedule:</td>
         <td>
             <%
                 BACnetArray<BACnetDailySchedule> dailySchedules =
-                        result.getValue(objId, ScheduleDefinition.weeklySchedule);
+                        result.getValue(objId, SchedulePropertyDefinitions.weeklySchedule);
                 if (! dailySchedules.isEmpty()) {
             %>
             <table cellpadding="0" cellspacing="0" id="vborders">
@@ -283,7 +346,7 @@
     <%
 
         BACnetArray<BACnetSpecialEvent> exceptionSchedules =
-            result.getValue(objId, ScheduleDefinition.exceptionSchedule);
+            result.getValue(objId, SchedulePropertyDefinitions.exceptionSchedule);
         for (BACnetSpecialEvent event : exceptionSchedules) {
     %>
     <tr>

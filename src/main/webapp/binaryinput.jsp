@@ -3,7 +3,7 @@
 <%@ page import="com.controlj.green.addonsupport.bacnet.*" %>
 <%@ page import="java.io.StringWriter" %>
 <%@ page import="java.io.PrintWriter" %>
-<%@ page import="java.util.Objects" %>
+<%@ page import="com.controlj.green.addonsupport.bacnet.object.BinaryPropertyDefinitions" %>
 <%--
   ~ Copyright (c) 2010 Automated Logic Corporation
   ~
@@ -26,7 +26,7 @@
   ~ THE SOFTWARE.
   --%>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<div>Analog Input page</div>
+<div>Binary Input page</div>
 <%
     int objIdNum = Integer.parseInt(request.getParameter("id"));
     int devInstanceNum = Integer.parseInt(request.getParameter("devid"));
@@ -48,11 +48,10 @@
 
         // Read properties including the entire propertyList array
         resultAllArray = device.readProperties(objId,
-                AnalogInputDefinition.objectName, AnalogInputDefinition.presentValue).get();
+                BinaryPropertyDefinitions.objectName, BinaryPropertyDefinitions.presentValue).get();
 
         nameValue = resultAllArray.getValue(objId, AnalogInputDefinition.objectName).getValue();
-        presentValue = String.valueOf(resultAllArray.getValue(objId, AnalogInputDefinition.presentValue).getValue());
-
+        presentValue = String.valueOf(resultAllArray.getValue(objId, BinaryPropertyDefinitions.presentValue).getValue());
     }
     catch ( Exception e )
     {
