@@ -1,5 +1,6 @@
 package com.controlj.experiment.bacnet.definitions;
 
+import com.controlj.experiment.bacnet.property.COVSubscriptionPropertyType;
 import com.controlj.green.addonsupport.bacnet.data.*;
 import com.controlj.green.addonsupport.bacnet.object.BACnetObjectTypes;
 import com.controlj.green.addonsupport.bacnet.object.ObjectType;
@@ -42,5 +43,5 @@ public class DeviceObjectDefinition
          createDefinition(BACnetPropertyTypes.unsigned, BACnetPropertyIdentifiers.protocolRevision);
 
    @NotNull public static final PropertyDefinition< BACnetList<BACnetCOVSubscription> > activeCovSubscriptions =
-         createDefinition(BACnetPropertyTypes.listOf(COVSubscriptionPropertyType.instance), BACnetPropertyIdentifiers.activeCovSubscriptions);
+         createDefinition(BACnetPropertyTypes.listOf( COVSubscriptionPropertyType.instance), BACnetPropertyIdentifiers.activeCovSubscriptions);
 }

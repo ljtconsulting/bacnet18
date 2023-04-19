@@ -3,7 +3,7 @@
 <%@ page import="com.controlj.green.addonsupport.bacnet.*" %>
 <%@ page import="java.io.StringWriter" %>
 <%@ page import="java.io.PrintWriter" %>
-<%@ page import="java.util.Objects" %>
+
 <%--
   ~ Copyright (c) 2010 Automated Logic Corporation
   ~

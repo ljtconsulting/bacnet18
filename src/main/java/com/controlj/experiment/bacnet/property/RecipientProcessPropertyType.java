@@ -1,4 +1,4 @@
-package com.controlj.experiment.bacnet.definitions;
+package com.controlj.experiment.bacnet.property;
 
 import com.controlj.green.addonsupport.bacnet.data.BACnetRecipient;
 import com.controlj.green.addonsupport.bacnet.data.BACnetRecipientProcess;

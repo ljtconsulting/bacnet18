@@ -8,14 +8,9 @@
 <%@ page import="org.jetbrains.annotations.NotNull" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.BACnetPropertyTypes" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.property.PropertyDefinition" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.ArrayList" %>
-<%@ page import="com.controlj.experiment.bacnet.definitions.DeviceObjectDefinition" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.data.*" %>
-<%@ page import="java.util.stream.Collectors" %>
-<%@ page import="java.util.function.Function" %>
 <%--
-  ~ Copyright (c) 2010 Automated Logic Corporation
+  ~ Copyright (c) 2023 Automated Logic Corporation
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -49,9 +44,6 @@
     String propertyListAll = "error";
 	String propertyList1 = "error";
     int propertyListSize_rpm = -1;
-    int activeCovSubscriptionSize = 0;
-    List< BACnetObjectPropertyReference > activeCovSubscriptions = new ArrayList<>();
-    //List<String> subscriptionsString = new ArrayList<>();
 
     try
     {
@@ -61,58 +53,44 @@
         BACnetDevice device = bacnet.lookupDevice(devInstanceNum).get();
         BACnetObjectIdentifier objId = new BACnetObjectIdentifier(objIdNum);
         ReadPropertiesResult resultAll = device.readProperties(objId,
-                CommonPropertyDefinitions.objectName, firmwareRevision, CommonPropertyDefinitions.propertyList).get();
+                CommonPropertyDefinitions.objectName, firmwareRevision;
 
         nameValue = resultAll.getValue(objId, CommonPropertyDefinitions.objectName).getValue();
         firmwareRevisionStr = resultAll.getValue(objId, firmwareRevision).getValue();
-        propertyListAll = resultAll.getValue(objId, CommonPropertyDefinitions.propertyList).toString();
 
-        final BACnetPropertyIdentifier resultProperty = resultAll.getValue(objId, CommonPropertyDefinitions.propertyList).get(0);
-        if ( resultProperty.getIdentifierNumber() > BACnetPropertyIdentifiers.values().length )
+        try
         {
-            PropertyIdentifier property = new PropertyIdentifier()
-            {
-                @Override
-                public int getId()
-                {
-                    return resultProperty.getIdentifierNumber();
-                }
+           ReadResult<BACnetArray<BACnetPropertyIdentifier>> result = device.readProperty(objId, CommonPropertyDefinitions.propertyList);
+           propertyListAll = result.get().toString();
 
-                @NotNull
-                @Override
-                public String getName()
+           final BACnetPropertyIdentifier resultProperty = resultAll.getValue( objId, CommonPropertyDefinitions.propertyList ).get( 0 );
+           if ( resultProperty.getIdentifierNumber() > BACnetPropertyIdentifiers.values().length )
+           {
+                PropertyIdentifier property = new PropertyIdentifier()
                 {
-                    return "UNKNOWN:" + getId();
-                }
-            };
-            propertyList1 = property.getName();
+                    @Override
+                    public int getId()
+                    {
+                        return resultProperty.getIdentifierNumber();
+                    }
+
+                    @NotNull
+                    @Override
+                    public String getName()
+                    {
+                        return "UNKNOWN:" + getId();
+                    }
+                };
+                propertyList1 = property.getName();
+           } else
+                propertyList1 = resultProperty.getIdentifier().getName();
+
+           propertyListSize_rpm = resultAll.getValue( objId, CommonPropertyDefinitions.propertyList ).size();
         }
-        else
-            propertyList1 = resultProperty.getIdentifier().getName();
-
-        propertyListSize_rpm = resultAll.getValue(objId, CommonPropertyDefinitions.propertyList).size();
-
-        ReadResult< BACnetList<BACnetCOVSubscription> > result = device.readProperty(objId, DeviceObjectDefinition.activeCovSubscriptions);
-        BACnetList<BACnetCOVSubscription> bacnetList = result.get();
-        for ( BACnetCOVSubscription covSubscription : bacnetList )
+        catch (BACnetException e)
         {
-           BACnetObjectPropertyReference opRef = covSubscription.getPropertyReference();
-           activeCovSubscriptions.add(opRef);
-/*
-           subscriptionsString = activeCovSubscriptions.stream()
-           //         .map( opr -> opr.getObjectIdentifier().getObjectIdAsString() + " => "+opr.getPropertyIdentifier().getIdentifierNumber() )
-                   .map( new Function< BACnetObjectPropertyReference, String >()
-                   {
-                       @Override
-                       public String apply( BACnetObjectPropertyReference opr )
-                       {
-                           return opr.getObjectIdentifier().getObjectIdAsString() + " => "+opr.getPropertyIdentifier().getIdentifierNumber();
-                       }
-                   } )
-                    .collect( Collectors.toList());
-*/
+           propertyListAll = "The Property_List property is not supported in this device.";
         }
-
     }
     catch (Exception e)
     {
@@ -148,13 +126,5 @@
     <tr>
         <td>Property List Size:</td>
         <td><%= propertyListSize_rpm %></td>
-    </tr>
-    <tr>
-        <td>Active COV Subscriptions Size:</td>
-        <td><%= activeCovSubscriptionSize %></td>
-    </tr>
-    <tr>
-        <td>Active COV Subscriptions:</td>
-        <td><%= activeCovSubscriptions %></td>
     </tr>
 </table>

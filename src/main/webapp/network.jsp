@@ -1,7 +1,3 @@
-<%@ page import="com.controlj.experiment.bacnet.definitions.AnalogInputDefinition" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetObjectIdentifier" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.property.PropertyDefinition" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.*" %>
 <%--
   ~ Copyright (c) 2010 Automated Logic Corporation
   ~
@@ -29,17 +25,23 @@
 
 %>
 <script type="text/javascript">
-    function addDevice(id) {
+    function getId(instance) {
+        return 8 << 22 | instance & 4194303;
+    }
+
+    function addDevice(instance, devid) {
         $("#tree").dynatree("getActiveNode").addChild({
-            title: id,
-            "id": id,
+            title: instance,
+            devid: devid,
+            "id": instance,
             childtype: "objects",
             icon: "../../../_common/lvl5/skin/graphics/type/hardware.gif",
+            renderpage: "device.jsp",
             isLazy: true
         })
     }
 </script>
 <div>Network #<%= net %></div>
 <div>
-    Device Instance:&nbsp;<input type="text" id="devid">&nbsp;<button onclick="new function() { addDevice($('#devid').attr('value')); }">Add</button>
+    Device Instance:&nbsp;<input type="text" id="devid">&nbsp;<button onclick="new function() { instance = $('#devid').attr('value'); devid = getId(instance); addDevice(instance, devid); }">Add</button>
 </div>

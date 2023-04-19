@@ -28,6 +28,7 @@ import com.controlj.green.addonsupport.bacnet.data.*;
 import com.controlj.green.addonsupport.bacnet.discovery.DeviceDiscoverer;
 import com.controlj.green.addonsupport.bacnet.discovery.NetworkDiscoverer;
 import com.controlj.green.addonsupport.bacnet.object.BACnetObjectTypes;
+import com.controlj.green.addonsupport.bacnet.object.CommonPropertyDefinitions;
 import com.controlj.green.addonsupport.bacnet.object.ObjectType;
 import com.controlj.green.addonsupport.bacnet.object.SchedulePropertyDefinitions;
 import org.json.JSONArray;
@@ -77,38 +78,12 @@ public class DiscoveryServlet extends HttpServlet {
             BACnetDevice device = bacnet.lookupDevice(devInstanceNum).get();
             objId = new BACnetObjectIdentifier(objIdNum);
 
-            MACAddress address = MACAddressFactory.createIPv4Address( (byte)1,(byte)2,(byte)4,(byte)5 );
-
-            String result = writeInternalSchedules( device, objId );
-            System.out.println(result);
        }
         catch (Exception e) {
             // since this servlet is being accessed via XHR and a user won't see it, this seems the best
             // way to communicate (and log) errors.
             e.printStackTrace();
         }
-    }
-
-    private String writeInternalSchedules(BACnetDevice device, BACnetObjectIdentifier objId)
-    {
-        String errorMessage = "";
-        BACnetTimeValue timeValue = new BACnetTimeValue( new BACnetTime(), new BACnetEnumerated( 1 ));
-        ArrayList<BACnetTimeValue> timeValues = new ArrayList<>();
-        timeValues.add( timeValue );
-
-        BACnetDailySchedule value = new BACnetDailySchedule( timeValues );
-        WriteResult<BACnetDailySchedule> writeResult = device.writeProperty(objId, SchedulePropertyDefinitions.weeklySchedule.element(1), value);
-        try
-        {
-            writeResult.check();
-        }
-        catch ( InterruptedException | BACnetException e )
-        {
-            StringWriter sw = new StringWriter();
-            e.printStackTrace(new PrintWriter( sw ) );
-            errorMessage = sw.toString();
-        }
-        return errorMessage;
     }
 
     /*
@@ -141,7 +116,7 @@ public class DiscoveryServlet extends HttpServlet {
                 BACnetConnection conn = BACnet.getBACnet().getDefaultConnection();
                 BACnetAccess bacnet = conn.getAccess();
                                 
-                if (type!= null && type.equals("networks") ) {   // handle network discovery
+                if (type.equals("networks") ) {   // handle network discovery
 
                     NetworkDiscoverer networkDiscoverer = bacnet.createNetworkDiscoverer();
                     List<Integer> addresses = networkDiscoverer.search(3, TimeUnit.SECONDS);
@@ -158,7 +133,7 @@ public class DiscoveryServlet extends HttpServlet {
                         next.put("renderpage", "network.jsp");
                         arrayData.put(next);
                     }
-                } else if (type!=null && type.equals("devices") && id!=null) {
+                } else if (type.equals("devices") && id!=null) {
                     DeviceDiscoverer deviceDiscoverer = bacnet.createDeviceDiscoverer();
                     int netNum = Integer.parseInt(id);
 
@@ -169,12 +144,14 @@ public class DiscoveryServlet extends HttpServlet {
 
                         next.put("title", Integer.toString(device.getDeviceIdentifier().getInstance()));
                         next.put("id", device.getDeviceIdentifier().getInstance());
+                        next.put("devid", device.getDeviceIdentifier().getObjectId());
                         next.put("childtype","objects");
                         next.put("icon", getIconForType(LocationType.Device));
+                        next.put("renderpage", "device.jsp");
                         next.put("isLazy", true);
                         arrayData.put(next);
                     }
-                }  else if (type!=null && type.equals("objects") && id!=null) {
+                }  else if (type.equals("objects") && id!=null) {
                     int devId = Integer.parseInt(id);
                     BACnetDevice device = bacnet.lookupDevice(devId).get();
                     List<BACnetObjectIdentifier> objectIDs = device.readObjectIdentifiers().get();
@@ -183,7 +160,7 @@ public class DiscoveryServlet extends HttpServlet {
                         try {
                             if (supportedObjectTypes.containsKey(objectID.getType())) {
 
-                                BACnetString name = device.readProperty(objectID, SchedulePropertyDefinitions.objectName).get();
+                                BACnetString name = device.readProperty(objectID, CommonPropertyDefinitions.objectName).get();
 
                                 JSONObject next = new JSONObject();
                                 next.put("title", name.getValue() + " - " + Integer.toString(objectID.getInstance()));

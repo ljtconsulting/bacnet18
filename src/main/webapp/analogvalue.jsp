@@ -3,14 +3,11 @@
 <%@ page import="com.controlj.green.addonsupport.bacnet.object.CommonPropertyDefinitions" %>
 <%@ page import="java.io.StringWriter" %>
 <%@ page import="java.io.PrintWriter" %>
-<%@ page import="java.util.Objects" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetUnsigned" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.object.AnalogPropertyDefinitions" %>
 <%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetReal" %>
 <%@ page import="com.controlj.experiment.bacnet.definitions.DeviceObjectDefinition" %>
-<%@ page import="com.controlj.green.addonsupport.bacnet.data.BACnetDeviceObjectPropertyReference" %>
 <%--
-  ~ Copyright (c) 2010 Automated Logic Corporation
+  ~ Copyright (c) 2023 Automated Logic Corporation
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal

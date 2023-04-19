@@ -1,4 +1,4 @@
-package com.controlj.experiment.bacnet.definitions;
+package com.controlj.experiment.bacnet.property;
 
 import com.controlj.green.addonsupport.bacnet.data.*;
 import com.controlj.green.addonsupport.bacnet.property.*;
@@ -17,7 +17,7 @@ public class COVSubscriptionPropertyType implements PropertyType< BACnetCOVSubsc
    @Override
    public BACnetCOVSubscription decode(@NotNull Decoder decoder) throws EncodeDecodeException
    {
-      BACnetRecipientProcess bacnetRecipientProcess = decoder.forContext(0).decode(RecipientProcessPropertyType.instance);
+      BACnetRecipientProcess bacnetRecipientProcess = decoder.forContext(0).decode( RecipientProcessPropertyType.instance);
       BACnetObjectPropertyReference propertyReference = decoder.forContext(1).decode(BACnetPropertyTypes.objectPropertyReference);
       BACnetBoolean confirmed = decoder.forContext(2).decode(BACnetPropertyTypes.bool);
       BACnetUnsigned expirationSecs = decoder.forContext(3).decode(BACnetPropertyTypes.unsigned);
